@@ -8,22 +8,27 @@ st.set_page_config(page_title="Malaysia Climate Visualization", layout="wide")
 sns.set(style="whitegrid")
 
 st.title("Malaysia Climate Visualization (Clean Data)")
-st.caption("Upload your already-cleaned CSV from Colab and explore 3 visualization objectives.")
+st.caption("Data auto-loaded from GitHub • Mean Temperature • Rainfall • Humidity (2000–2021)")
 
 # -------------------------
-# Upload cleaned CSV
+# Load cleaned CSV from GitHub (no manual upload)
 # -------------------------
-uploaded = st.sidebar.file_uploader("Upload cleaned CSV (from Colab)", type=["csv"])
-if not uploaded:
-    st.info("Please upload your **cleaned CSV** (e.g., `malaysia_climate_clean.csv`).")
+URL = "https://raw.githubusercontent.com/intannajwa20/malaysia-climate-visualization/refs/heads/main/malaysia_climate_clean.csv"
+
+@st.cache_data
+def load_data(url: str) -> pd.DataFrame:
+    df = pd.read_csv(url)
+    # safety: if AvgTemp_C missing, compute from Min/Max
+    if 'AvgTemp_C' not in df.columns and {'MinTemp_C','MaxTemp_C'}.issubset(df.columns):
+        df['AvgTemp_C'] = (df['MinTemp_C'] + df['MaxTemp_C']) / 2
+    return df
+
+try:
+    df = load_data(URL)
+    st.success("✅ Cleaned dataset loaded from GitHub")
+except Exception as e:
+    st.error(f"⚠️ Failed to load dataset from GitHub. Check the file path/visibility.\n\n{e}")
     st.stop()
-
-# Load (no cleaning here; we trust your CSV)
-df = pd.read_csv(uploaded)
-
-# Optional: re-compute AvgTemp_C if missing
-if 'AvgTemp_C' not in df.columns and {'MinTemp_C','MaxTemp_C'}.issubset(df.columns):
-    df['AvgTemp_C'] = (df['MinTemp_C'] + df['MaxTemp_C']) / 2
 
 # -------------------------
 # Filters (years & states)
